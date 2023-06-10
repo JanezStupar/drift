@@ -1,3 +1,6 @@
+_note_: This is a fork of the original drift library. The purpose of this fork is development of CRDT plugin/package.
+This fork is maintained by Janez Stupar. If I decide to end up using this library in production, I will attempt to merge the changes back to the original libraries.
+
 # Drift
 
 ## Proudly Sponsored by [Stream 💙](https://getstream.io/chat/sdk/flutter/?utm_source=Moor&utm_medium=Github_Repo_Content_Ad&utm_content=Developer&utm_campaign=Moor_July2022_FlutterChatSDK_klmh22)

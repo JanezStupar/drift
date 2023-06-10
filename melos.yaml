@@ -5,6 +5,9 @@ packages:
  - docs
  - drift
  - drift_sqflite
+ - drift_crdt
+ - sqlite_crdt
+ - sql_crdt
  - drift_dev
  - sqlparser
  - examples/*
@@ -29,6 +32,13 @@ scripts:
     exec: {concurrency: 1}
     packageFilters:
       dependsOn: build_runner
+
+  test_crdt:
+    run: dart test --tags crdt
+    exec: {concurrency: 1}
+    packageFilters:
+      scope: drift_crdt
+      ignore: drift_postgres # this is an integration test
 
   test:
     run: dart test
