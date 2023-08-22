@@ -18,6 +18,16 @@ void crudTests(TestExecutor executor) {
     await executor.clearDatabaseAndClose(db);
   });
 
+  test('delete records from a table', () async {
+    final db = Database(executor.createConnection());
+
+    await db.users.delete().go();
+    final count = await db.userCount().getSingle();
+    expect(count, 0);
+
+    await executor.clearDatabaseAndClose(db);
+  });
+
   test('update row', () async {
     final db = Database(executor.createConnection());
 
