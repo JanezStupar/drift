@@ -13,7 +13,6 @@ dependencies:
   sqflite_common_ffi: ^2.2.5
   sqflite_common_ffi_web: ^0.3.5
   sql_crdt: ^1.0.1
-#    path: ../sql_crdt
 
 dev_dependencies:
   lints: any

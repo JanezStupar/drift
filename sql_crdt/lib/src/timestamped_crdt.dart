@@ -55,8 +55,7 @@ abstract class TimestampedCrdt extends BaseCrdt {
     }
 
     hlc ??= canonicalTime;
-    args?.addAll([hlc, hlc.nodeId, hlc]);
-    return [newStatement, args];
+    return [newStatement, [...(args??[]), ...[hlc, hlc.nodeId, hlc]]];
   }
 
   @override
@@ -104,8 +103,7 @@ abstract class TimestampedCrdt extends BaseCrdt {
     );
 
     hlc ??= canonicalTime;
-    args?.addAll([hlc, hlc.nodeId, hlc]);
-    return [newStatement, args];
+    return [newStatement, [...(args??[]), ...[hlc, hlc.nodeId, hlc]]];
   }
 
   @override
@@ -113,6 +111,52 @@ abstract class TimestampedCrdt extends BaseCrdt {
       [Hlc? hlc]) async {
     List transformedArgs = prepareUpdate(statement, args, hlc);
     await _execute(transformedArgs[0], transformedArgs[1]);
+  }
+
+  _listToBinaryExpression (List<Expression> expressions, Token token) {
+    if (expressions.length == 1) {
+      return expressions.first;
+    }
+    return BinaryExpression(expressions.first, token, _listToBinaryExpression(expressions.sublist(1), token));
+  }
+
+  List prepareSelect(SelectStatement statement, List<Object?>? args) {
+    transformAutomaticExplicit(statement);
+    var fakeSpan = SourceFile.fromString('fakeSpan').span(0);
+    var andToken = Token(TokenType.and, fakeSpan);
+    var equalToken = Token(TokenType.equal, fakeSpan);
+
+    List<Expression> deletedExpr = [];
+    statement.from?.allDescendants.whereType<TableReference>().forEachIndexed((index, reference) {
+      if (reference.as != null) {
+        deletedExpr.add(BinaryExpression(
+            Reference(columnName: 'is_deleted', entityName: reference.as, schemaName: reference.schemaName),
+            equalToken,
+            NumericLiteral(0)
+        ));
+        print(reference.tableName);
+      }
+    });
+    if (deletedExpr.isEmpty) {
+      deletedExpr.add(BinaryExpression(
+          Reference(columnName: 'is_deleted'),
+          equalToken,
+          NumericLiteral(0)
+      ));
+    }
+
+
+    if (statement.where != null) {
+      statement.where = BinaryExpression(
+          statement.where!,
+          Token(TokenType.and, fakeSpan),
+          _listToBinaryExpression(deletedExpr, andToken)
+      );
+    } else {
+      statement.where = _listToBinaryExpression(deletedExpr, andToken);
+    }
+
+    return [statement, args];
   }
 
   List prepareDelete(DeleteStatement statement, List<Object?>? args,
@@ -157,6 +201,13 @@ abstract class TimestampedCrdt extends BaseCrdt {
   }
 
   @override
+  Future<List<Map<String, Object?>>> _rawQuery(SelectStatement statement,
+      [List<Object?>? args]) {
+    List transformedArgs = prepareSelect(statement, args);
+    return super._rawQuery(transformedArgs[0], transformedArgs[1]);
+  }
+
+  @override
   Future<int> _rawInsert(InsertStatement statement, [List<Object?>? args, Hlc? hlc]) async {
     List transformedArgs = prepareInsert(statement, args, hlc);
     return super._rawInsert(transformedArgs[0], transformedArgs[1]);
@@ -171,6 +222,6 @@ abstract class TimestampedCrdt extends BaseCrdt {
   @override
   Future<int> _rawDelete(DeleteStatement statement, [List<Object?>? args, Hlc? hlc]) async {
     List transformedArgs = prepareDelete(statement, args, hlc);
-    return super._rawDelete(transformedArgs[0], transformedArgs[1]);
+    return super._rawUpdate(transformedArgs[0], transformedArgs[1]);
   }
 }

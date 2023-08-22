@@ -30,15 +30,15 @@ class SqliteTransactionCrdt {
 
   Future<List<Map<String, Object?>>> rawQuery(String sql,
       [List<Object?>? arguments]) {
-    return txn.databaseApi.rawQuery(sql, arguments);
+    return txn.rawQuery(sql, arguments);
   }
 
   Future<int> rawUpdate(String sql, [List<Object?>? arguments]) {
-    return txn.databaseApi.rawUpdate(sql, arguments);
+    return txn.rawUpdate(sql, arguments);
   }
 
   Future<int> rawInsert(String sql, [List<Object?>? arguments]) {
-    return txn.databaseApi.rawInsert(sql, arguments);
+    return txn.rawInsert(sql, arguments);
   }
 }
 
@@ -91,14 +91,6 @@ class _CrdtTransactionDelegate extends SupportedTransactionDelegate {
     }
 
     await batch.apply(noResult: true);
-  }
-
-  Future<void> rollbackTransaction() async {
-    // no-op
-  }
-
-  Future<void> commitTransaction() async {
-    // no-op
   }
 }
 

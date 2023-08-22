@@ -12,6 +12,7 @@ dependencies:
   sqlparser: ^0.28.1
   uuid: ^3.0.7
   collection: ^1.15.0
+  source_span: ^1.8.1
 
 dev_dependencies:
   lints: any

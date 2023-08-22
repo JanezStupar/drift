@@ -8,12 +8,18 @@ import 'package:collection/collection.dart';
 import 'database_api.dart';
 import 'hlc.dart';
 import 'sql_util.dart';
+import 'package:source_span/source_span.dart';
 
 part 'sql_crdt.dart';
 
 part 'timestamped_crdt.dart';
 
 part 'transaction_crdt.dart';
+
+// Queries that don't need to be intercepted and transformed
+const specialQueries = <String> {
+  'SELECT 1',
+};
 
 /// Intercepts CREATE TABLE queries to assist with table creation and updates
 class BaseCrdt {
@@ -131,13 +137,13 @@ class BaseCrdt {
 
   Object? _convert(Object? value) => (value is Hlc) ? value.toString() : value;
 
-  Future<List<Map<String, Object?>>> _rawQuery(String sql,
+  Future<List<Map<String, Object?>>> _rawQuery(SelectStatement statement,
       [List<Object?>? args]) {
-    return _db.rawQuery(sql, args);
+    return _db.rawQuery(statement.toSql(), args);
   }
 
-  Future<int> _rawUpdate(UpdateStatement statement, [List<Object?>? args]) {
-    return _db.rawUpdate(statement.toSql(), args?.map(_convert).toList());
+  Future<int> _rawUpdate(UpdateStatement statement, [List<Object?>? args]) async {
+    return await _db.rawUpdate(statement.toSql(), args?.map(_convert).toList());
   }
 
   Future<int> _rawInsert(InsertStatement statement, [List<Object?>? args]) {
@@ -150,14 +156,32 @@ class BaseCrdt {
 
   Future<List<Map<String, Object?>>> rawQuery(String sql,
       [List<Object?>? arguments]) {
-    return _rawQuery(sql, arguments);
+
+    // There are some queries where it doesn't make sense to add CRDT columns
+    final isSpecial = specialQueries.contains(sql.toUpperCase());
+    if (isSpecial) {
+      return _db.rawQuery(sql, arguments);
+    }
+
+    final result = parseSql(sql);
+    if (result.rootNode is SelectStatement) {
+      return _rawQuery(result.rootNode as SelectStatement, arguments);
+    } else {
+      return _db.rawQuery(sql, arguments);
+    }
   }
 
 
 
   Future<int> rawUpdate(String sql, [List<Object?>? args]) async {
     final result = parseSql(sql);
-    return _rawUpdate(result.rootNode as UpdateStatement, args);
+    if (result.rootNode is UpdateStatement) {
+      return _rawUpdate(result.rootNode as UpdateStatement, args);
+    } else if (result.rootNode is DeleteStatement) {
+      return _rawDelete(result.rootNode as DeleteStatement, args);
+    } else {
+      throw 'Unsupported statement: $sql';
+    }
   }
 
   Future<int> rawInsert(String sql, [List<Object?>? arguments]) async {

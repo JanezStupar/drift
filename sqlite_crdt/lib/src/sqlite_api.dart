@@ -34,27 +34,27 @@ class SqliteApi extends DatabaseApi {
     return (_db as Database).transaction((t) => action(SqliteApi(t)));
   }
 
-  Batch batch() => (_db as Database).batch();
+  Batch batch() => _db.batch();
 
   @override
   Future<List<Map<String, Object?>>> rawQuery(String sql,
       [List<Object?>? arguments]) {
-    return (_db as Database).rawQuery(sql, arguments);
+    return _db.rawQuery(sql, arguments);
   }
 
   @override
   Future<int> rawUpdate(String sql, [List<Object?>? arguments]) {
-    return (_db as Database).rawUpdate(sql, arguments);
+    return _db.rawUpdate(sql, arguments);
   }
 
   @override
   Future<int> rawInsert(String sql, [List<Object?>? arguments]) {
-    return (_db as Database).rawInsert(sql, arguments);
+    return _db.rawInsert(sql, arguments);
   }
 
   @override
   Future<int> rawDelete(String sql, [List<Object?>? arguments]) {
-    return (_db as Database).rawDelete(sql, arguments);
+    return _db.rawDelete(sql, arguments);
   }
 
   @override
