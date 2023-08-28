@@ -7,7 +7,6 @@ library drift_crdt;
 import 'dart:async';
 import 'dart:io';
 
-
 import 'package:drift/backends.dart';
 import 'package:drift/drift.dart';
 import 'package:path/path.dart';
@@ -42,7 +41,6 @@ class SqliteTransactionCrdt {
   }
 }
 
-
 class _CrdtQueryDelegate extends QueryDelegate {
   late final SqliteTransactionCrdt _transactionCrdt;
 
@@ -68,7 +66,6 @@ class _CrdtQueryDelegate extends QueryDelegate {
   Future<int> runUpdate(String statement, List<Object?> args) {
     return _transactionCrdt.rawUpdate(statement, args);
   }
-
 }
 
 class _CrdtTransactionDelegate extends SupportedTransactionDelegate {
@@ -77,7 +74,7 @@ class _CrdtTransactionDelegate extends SupportedTransactionDelegate {
   _CrdtTransactionDelegate(this.api);
 
   @override
-  FutureOr<void> startTransaction(Future Function(QueryDelegate) run){
+  FutureOr<void> startTransaction(Future Function(QueryDelegate) run) {
     return api.sqliteCrdt.transaction((txn) async {
       return run(_CrdtQueryDelegate(SqliteTransactionCrdt(txn)));
     });
@@ -110,7 +107,8 @@ class _CrdtDelegate extends DatabaseDelegate {
       {this.singleInstance = true, this.creator});
 
   @override
-  late final DbVersionDelegate versionDelegate = _CrdtVersionDelegate(sqliteCrdt);
+  late final DbVersionDelegate versionDelegate =
+      _CrdtVersionDelegate(sqliteCrdt);
 
   @override
   TransactionDelegate get transactionDelegate {
@@ -264,4 +262,28 @@ class CrdtQueryExecutor extends DelegatedDatabase {
   // Setting isSequential here helps with cancellations in stream queries
   // though.
   bool get isSequential => true;
+
+  /// Returns the last modified timestamp of the database.
+  Future<Hlc?> getLastModified({String? onlyNodeId, String? excludeNodeId}) async {
+    final crdtDelegate = delegate as _CrdtDelegate;
+    return crdtDelegate.sqliteCrdt
+        .lastModified(onlyNodeId: onlyNodeId, excludeNodeId: excludeNodeId);
+  }
+
+  Future<Map<String, Iterable<Map<String, Object?>>>> getChangeset(
+      {Iterable<String>? fromTables,
+      Hlc? modifiedSince,
+      bool onlyModifiedHere = false}) async {
+    final crdtDelegate = delegate as _CrdtDelegate;
+    return crdtDelegate.sqliteCrdt.getChangeset(
+        fromTables: fromTables,
+        modifiedSince: modifiedSince,
+        onlyModifiedHere: onlyModifiedHere);
+  }
+
+  Future<void> merge(
+      Map<String, Iterable<Map<String, Object?>>> changeset) async {
+    final crdtDelegate = delegate as _CrdtDelegate;
+    return crdtDelegate.sqliteCrdt.merge(changeset);
+  }
 }

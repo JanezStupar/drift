@@ -13,6 +13,7 @@ import 'src/is_web_locator.dart';
 
 export 'package:sqflite_common/sqlite_api.dart';
 export 'package:sql_crdt/sql_crdt.dart';
+export 'src/serializable.dart';
 
 class SqliteCrdt extends SqlCrdt {
   SqliteCrdt._(super.db);

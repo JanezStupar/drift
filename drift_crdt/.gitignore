@@ -1,4 +1,5 @@
 .DS_Store
+app_from_asset.db
 .dart_tool/
 
 .packages

@@ -4,11 +4,15 @@ import 'package:drift_crdt/drift_crdt.dart';
 import 'package:drift_testcases/tests.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart' show getDatabasesPath;
+import 'package:sqflite_common_ffi/sqflite_ffi.dart' show databaseFactory, databaseFactoryFfi, getDatabasesPath;
+
+import 'crdt_functions_test.dart';
 
 class CrdtExecutor extends TestExecutor {
+  // Nested transactions are not supported because the Sqflite backend doesn't
+  // support them.
   @override
-  bool get supportsNestedTransactions => true;
+  bool get supportsNestedTransactions => false;
 
   @override
   DatabaseConnection createConnection() {
@@ -32,7 +36,13 @@ class CrdtExecutor extends TestExecutor {
 }
 
 Future<void> main() async {
-  runAllTests(CrdtExecutor());
+  if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
+    databaseFactory = databaseFactoryFfi;
+  }
+
+  var executor = CrdtExecutor();
+  executor.deleteData();
+  runAllTests(executor);
 }
 
 class EmptyDb extends GeneratedDatabase {

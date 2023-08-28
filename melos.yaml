@@ -34,7 +34,7 @@ scripts:
       dependsOn: build_runner
 
   test_crdt:
-    run: dart test --tags crdt
+    run: flutter test
     exec: {concurrency: 1}
     packageFilters:
       scope: drift_crdt
@@ -45,4 +45,6 @@ scripts:
     exec: {concurrency: 1}
     packageFilters:
       dependsOn: test
-      ignore: drift_postgres # this is an integration test
+      ignore: 
+       - drift_postgres # this is an integration test
+       - drift_crdt # this is handled by test_crdt
