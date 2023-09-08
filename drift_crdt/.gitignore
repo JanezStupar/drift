@@ -1,5 +1,6 @@
 .DS_Store
 app_from_asset.db
+app_from_asset_migration.db
 .dart_tool/
 
 .packages

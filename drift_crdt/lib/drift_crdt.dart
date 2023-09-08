@@ -97,6 +97,7 @@ class _CrdtDelegate extends DatabaseDelegate {
 
   final bool inDbFolder;
   final String path;
+  final bool migrate;
 
   bool singleInstance;
   final DatabaseCreator? creator;
@@ -104,7 +105,7 @@ class _CrdtDelegate extends DatabaseDelegate {
   late _CrdtTransactionDelegate? _transactionDelegate;
 
   _CrdtDelegate(this.inDbFolder, this.path,
-      {this.singleInstance = true, this.creator});
+      {this.singleInstance = true, this.creator, this.migrate = false});
 
   @override
   late final DbVersionDelegate versionDelegate =
@@ -136,6 +137,7 @@ class _CrdtDelegate extends DatabaseDelegate {
     sqliteCrdt = await SqliteCrdt.open(
       resolvedPath,
       singleInstance: singleInstance,
+      migrate: migrate,
     );
     _transactionDelegate = _CrdtTransactionDelegate(this);
     _isOpen = true;
@@ -212,10 +214,12 @@ class CrdtQueryExecutor extends DelegatedDatabase {
       {required String path,
       bool? logStatements,
       bool singleInstance = true,
-      DatabaseCreator? creator})
+      DatabaseCreator? creator,
+      bool migrate = false
+      })
       : super(
             _CrdtDelegate(false, path,
-                singleInstance: singleInstance, creator: creator),
+                singleInstance: singleInstance, creator: creator, migrate: migrate),
             logStatements: logStatements);
 
   /// A query executor that will store the database in the file declared by
@@ -233,10 +237,11 @@ class CrdtQueryExecutor extends DelegatedDatabase {
       {required String path,
       bool? logStatements,
       bool singleInstance = true,
-      DatabaseCreator? creator})
+      DatabaseCreator? creator,
+      bool migrate = false})
       : super(
             _CrdtDelegate(true, path,
-                singleInstance: singleInstance, creator: creator),
+                singleInstance: singleInstance, creator: creator, migrate: migrate),
             logStatements: logStatements);
 
   /// The underlying sqflite [s.Database] object used by drift to send queries.
@@ -249,7 +254,7 @@ class CrdtQueryExecutor extends DelegatedDatabase {
   /// need to. The database is exposed to make migrating from sqflite to drift
   /// easier.
   ///
-  /// Note that this returns null until the drifft database has been opened.
+  /// Note that this returns null until the drift database has been opened.
   /// A drift database is opened lazily when the first query runs.
   SqliteCrdt? get sqfliteDb {
     final crdtDelegate = delegate as _CrdtDelegate;

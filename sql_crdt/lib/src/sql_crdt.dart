@@ -64,10 +64,35 @@ abstract class SqlCrdt extends TimestampedCrdt {
   /// Make sure you run [init] after instantiation.
   SqlCrdt(super.db);
 
+  Hlc generateHlc() => Hlc.zero(Uuid().v4());
+
   /// Compute and cache the last modified date.
   Future<void> init() async {
     // Generate a node id if there are no existing records
-    _canonicalTime = await lastModified() ?? Hlc.zero(Uuid().v4());
+    _canonicalTime = await lastModified() ?? generateHlc();
+  }
+
+  /// migrate an existing database to support drift_crdt
+  Future<void> migrate() async {
+    _canonicalTime = generateHlc();
+    final tables = await _db.getTables();
+    if (tables.isEmpty) return;
+
+    // write a query that adds CRDT columns to tables
+    final tableStatements = [];
+    for (var table in tables) {
+      tableStatements.add('ALTER TABLE $table ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0;');
+      tableStatements.add('ALTER TABLE $table ADD COLUMN hlc TEXT NOT NULL DEFAULT \'${_canonicalTime.toString()}\';');
+      tableStatements.add('ALTER TABLE $table ADD COLUMN node_id TEXT NOT NULL DEFAULT \'${_canonicalTime.nodeId}\';');
+      tableStatements.add('ALTER TABLE $table ADD COLUMN modified TEXT NOT NULL DEFAULT \'${_canonicalTime.toString()}\';');
+    }
+
+    // run the query on the database as batch
+    await _db.transaction((txn) async {
+      for (final statement in tableStatements) {
+        await txn.execute(statement);
+      }
+    });
   }
 
   @override
