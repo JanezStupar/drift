@@ -1736,7 +1736,7 @@ class Parser {
       } while (_matchOne(TokenType.comma));
 
       _consume(TokenType.rightParen,
-          'Expected clpsing parenthesis after column list');
+          'Expected closing parenthesis after column list');
     }
     final source = _insertSource();
     final upsert = <UpsertClauseEntry>[];
@@ -2496,6 +2496,10 @@ class Parser {
   }
 
   List<Token>? _typeName() {
+    if (enableDriftExtensions && _matchOne(TokenType.inlineDart)) {
+      return [_previous];
+    }
+
     // sqlite doesn't really define what a type name is and has very loose rules
     // at turning them into a type affinity. We support this pattern:
     // typename = identifier [ "(" { identifier | comma | number_literal } ")" ]

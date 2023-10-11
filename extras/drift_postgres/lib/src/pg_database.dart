@@ -10,10 +10,12 @@ class PgDatabase extends DelegatedDatabase {
     required PgEndpoint endpoint,
     PgSessionSettings? sessionSettings,
     bool logStatements = false,
+    bool enableMigrations = true,
   }) : super(
           _PgDelegate(
             () => PgConnection.open(endpoint, sessionSettings: sessionSettings),
             true,
+            enableMigrations,
           ),
           isSequential: true,
           logStatements: logStatements,
@@ -21,8 +23,11 @@ class PgDatabase extends DelegatedDatabase {
 
   /// Creates a drift database implementation from a postgres database
   /// [connection].
-  PgDatabase.opened(PgSession connection, {bool logStatements = false})
-      : super(_PgDelegate(() => connection, false),
+  PgDatabase.opened(
+    PgSession connection, {
+    bool logStatements = false,
+    bool enableMigrations = true,
+  }) : super(_PgDelegate(() => connection, false, enableMigrations),
             isSequential: true, logStatements: logStatements);
 
   @override
@@ -30,9 +35,14 @@ class PgDatabase extends DelegatedDatabase {
 }
 
 class _PgDelegate extends DatabaseDelegate {
-  _PgDelegate(this._open, this.closeUnderlyingWhenClosed);
+  _PgDelegate(
+    this._open,
+    this.closeUnderlyingWhenClosed,
+    this.enableMigrations,
+  );
 
   final bool closeUnderlyingWhenClosed;
+  final bool enableMigrations;
   final FutureOr<PgSession> Function() _open;
 
   PgSession? _openedSession;
@@ -49,12 +59,17 @@ class _PgDelegate extends DatabaseDelegate {
   @override
   Future<void> open(QueryExecutorUser user) async {
     final session = await _open();
-    final pgVersionDelegate = _PgVersionDelegate(session);
 
-    await pgVersionDelegate.init();
+    if (enableMigrations) {
+      final pgVersionDelegate = _PgVersionDelegate(session);
+
+      await pgVersionDelegate.init();
+      versionDelegate = pgVersionDelegate;
+    } else {
+      versionDelegate = NoVersionDelegate();
+    }
 
     _openedSession = session;
-    versionDelegate = pgVersionDelegate;
   }
 
   @override
@@ -152,25 +167,16 @@ class _BoundArguments {
     }
 
     for (final value in args) {
-      if (value == null) {
-        add(PgTypedParameter(PgDataType.text, null));
-      } else if (value is int) {
-        add(PgTypedParameter(PgDataType.bigInteger, value));
-      } else if (value is BigInt) {
-        // Drift only uses BigInts to represent 64-bit values on the web, so we
-        // can use toInt() here.
-        add(PgTypedParameter(PgDataType.bigInteger, value));
-      } else if (value is bool) {
-        add(PgTypedParameter(PgDataType.boolean, value));
-      } else if (value is double) {
-        add(PgTypedParameter(PgDataType.double, value));
-      } else if (value is String) {
-        add(PgTypedParameter(PgDataType.text, value));
-      } else if (value is List<int>) {
-        add(PgTypedParameter(PgDataType.byteArray, value));
-      } else {
-        throw ArgumentError.value(value, 'value', 'Unsupported type');
-      }
+      add(switch (value) {
+        PgTypedParameter() => value,
+        null => PgTypedParameter(PgDataType.text, null),
+        int() || BigInt() => PgTypedParameter(PgDataType.bigInteger, value),
+        String() => PgTypedParameter(PgDataType.text, value),
+        bool() => PgTypedParameter(PgDataType.boolean, value),
+        double() => PgTypedParameter(PgDataType.double, value),
+        List<int>() => PgTypedParameter(PgDataType.byteArray, value),
+        _ => throw ArgumentError.value(value, 'value', 'Unsupported type'),
+      });
     }
 
     return _BoundArguments(types, parameters);
