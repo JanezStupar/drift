@@ -1,14 +1,14 @@
-# TODO: Sort out readme
 ## drift_crdt
 
-`drift_crdt` contains a drift database implementation based on the `sqflite`
-package.
+`drift_crdt` contains a CRDT drift database implementation based on the `sqflite`
+package. This package is a plugin for Drift by Simon Binder and is based on
+Simon Binder's `drift_sqflite` package.
 
 For more information on `drift`, see its [documentation](https://drift.simonbinder.eu/docs/).
 
 ### Usage
 
-The `SqfliteQueryExecutor` class can be passed to the constructor of your drift database
+The `CrdtQueryExecutor` class can be passed to the constructor of your drift database
 class to make it use `sqflite`.
 
 ```dart
@@ -24,17 +24,9 @@ class MyDatabase extends _$MyDatabase {
 }
 
 QueryExecutor _openConnection() {
-  return SqfliteQueryExecutor.inDatabaseFolder(path: 'db.sqlite');
+  return CrdtQueryExecutor.inDatabaseFolder(path: 'db.sqlite');
 }
 ```
 
 __Note__: The `drift_crdt` package is an alternative to the standard approach suggested in
-the drift documentation (which consists of a `NativeDatabase` instead of `SqfliteQueryExecutor`).
-Using this package is primarily recommended when migrating existing projects off `moor_flutter`.
-When using a `SqfliteQueryExecutor`, you don't need to depend on `sqlite3_flutter_libs` like the
-drift documentation suggests for the standard approach.
-
-### Migrating from `moor_flutter`
-
-The easiest way to migrate from `moor_flutter` to `drift_crdt` is to use the
-[automatic migration tool](https://drift.simonbinder.eu/name/#automatic-migration).
+the drift documentation (which consists of a `NativeDatabase` instead of `CrdtQueryExecutor`).
