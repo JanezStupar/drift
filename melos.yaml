@@ -6,8 +6,6 @@ packages:
  - drift
  - drift_sqflite
  - drift_crdt
- - sqlite_crdt
- - sql_crdt
  - drift_dev
  - sqlparser
  - examples/*

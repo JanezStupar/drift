@@ -17,6 +17,7 @@ import 'package:sqlite_crdt/sqlite_crdt.dart';
 /// This can be useful to, for instance, load the database from an asset if it
 /// doesn't exist.
 typedef DatabaseCreator = FutureOr<void> Function(File file);
+typedef Query = (String sql, List<Object?> args);
 
 class SqliteTransactionCrdt {
   final TransactionCrdt txn;
@@ -130,6 +131,9 @@ class _CrdtDelegate extends DatabaseDelegate {
 
     final file = File(resolvedPath);
     if (creator != null && !await file.exists()) {
+      if (!Directory(dirname(resolvedPath)).existsSync()) {
+        await Directory(dirname(resolvedPath)).create(recursive: true);
+      }
       await creator!(file);
     }
 
@@ -215,11 +219,12 @@ class CrdtQueryExecutor extends DelegatedDatabase {
       bool? logStatements,
       bool singleInstance = true,
       DatabaseCreator? creator,
-      bool migrate = false
-      })
+      bool migrate = false})
       : super(
             _CrdtDelegate(false, path,
-                singleInstance: singleInstance, creator: creator, migrate: migrate),
+                singleInstance: singleInstance,
+                creator: creator,
+                migrate: migrate),
             logStatements: logStatements);
 
   /// A query executor that will store the database in the file declared by
@@ -241,7 +246,9 @@ class CrdtQueryExecutor extends DelegatedDatabase {
       bool migrate = false})
       : super(
             _CrdtDelegate(true, path,
-                singleInstance: singleInstance, creator: creator, migrate: migrate),
+                singleInstance: singleInstance,
+                creator: creator,
+                migrate: migrate),
             logStatements: logStatements);
 
   /// The underlying sqflite [s.Database] object used by drift to send queries.
@@ -269,25 +276,31 @@ class CrdtQueryExecutor extends DelegatedDatabase {
   bool get isSequential => true;
 
   /// Returns the last modified timestamp of the database.
-  Future<Hlc?> getLastModified({String? onlyNodeId, String? excludeNodeId}) async {
+  Future<Hlc?> getLastModified(
+      {String? onlyNodeId, String? exceptNodeId}) async {
     final crdtDelegate = delegate as _CrdtDelegate;
     return crdtDelegate.sqliteCrdt
-        .lastModified(onlyNodeId: onlyNodeId, excludeNodeId: excludeNodeId);
+        .getLastModified(onlyNodeId: onlyNodeId, exceptNodeId: exceptNodeId);
   }
 
-  Future<Map<String, Iterable<Map<String, Object?>>>> getChangeset(
-      {Iterable<String>? fromTables,
-      Hlc? modifiedSince,
-      bool onlyModifiedHere = false}) async {
+  Future<CrdtChangeset> getChangeset({
+    Map<String, Query>? customQueries,
+    Iterable<String>? onlyTables,
+    String? onlyNodeId,
+    String? exceptNodeId,
+    Hlc? modifiedOn,
+    Hlc? modifiedAfter,
+  }) async {
     final crdtDelegate = delegate as _CrdtDelegate;
     return crdtDelegate.sqliteCrdt.getChangeset(
-        fromTables: fromTables,
-        modifiedSince: modifiedSince,
-        onlyModifiedHere: onlyModifiedHere);
+        customQueries: customQueries,
+        onlyTables: onlyTables,
+        exceptNodeId: exceptNodeId,
+        modifiedOn: modifiedOn,
+        modifiedAfter: modifiedAfter);
   }
 
-  Future<void> merge(
-      Map<String, Iterable<Map<String, Object?>>> changeset) async {
+  Future<void> merge(CrdtChangeset changeset) async {
     final crdtDelegate = delegate as _CrdtDelegate;
     return crdtDelegate.sqliteCrdt.merge(changeset);
   }

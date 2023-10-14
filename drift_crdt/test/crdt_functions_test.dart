@@ -9,6 +9,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart'
     show databaseFactory, databaseFactoryFfi, getDatabasesPath;
+import 'package:sqlite_crdt/sqlite_crdt.dart' show CrdtChangeset, Hlc;
 import 'serializable.dart' as s;
 
 void crdtTests(Database db, CrdtExecutor executor) {
@@ -17,18 +18,18 @@ void crdtTests(Database db, CrdtExecutor executor) {
         await (db.executor as CrdtQueryExecutor).getLastModified();
 
     expect(lastModified, isNotNull);
-    expect(lastModified?.millis, equals(1691413901771));
+    expect(lastModified?.dateTime.millisecondsSinceEpoch, equals(1691413901771));
   });
 
   test('get changeset', () async {
-    final changeset = await (db.executor as CrdtQueryExecutor).getChangeset();
+    CrdtChangeset changeset = await (db.executor as CrdtQueryExecutor).getChangeset();
 
     expect(changeset, isNotNull);
-    expect(changeset.length, equals(1));
+    expect(changeset.length, equals(2));
     expect(
         json.encode(changeset),
         equals(
-            '{"users":[{"id":1,"name":"Dash","birth_date":1318284000,"profile_picture":null,"preferences":null,"is_deleted":0,"hlc":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966","node_id":"42bab6fa-f6c6-4e5b-babf-1a2adb170966","modified":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"},{"id":2,"name":"Duke","birth_date":822351600,"profile_picture":null,"preferences":null,"is_deleted":0,"hlc":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966","node_id":"42bab6fa-f6c6-4e5b-babf-1a2adb170966","modified":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"},{"id":3,"name":"Go Gopher","birth_date":1332885600,"profile_picture":null,"preferences":null,"is_deleted":0,"hlc":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966","node_id":"42bab6fa-f6c6-4e5b-babf-1a2adb170966","modified":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"}]}'));
+            '{"users":[{"id":1,"name":"Dash","birth_date":1318284000,"profile_picture":null,"preferences":null,"is_deleted":0,"hlc":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966","node_id":"42bab6fa-f6c6-4e5b-babf-1a2adb170966","modified":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"},{"id":2,"name":"Duke","birth_date":822351600,"profile_picture":null,"preferences":null,"is_deleted":0,"hlc":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966","node_id":"42bab6fa-f6c6-4e5b-babf-1a2adb170966","modified":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"},{"id":3,"name":"Go Gopher","birth_date":1332885600,"profile_picture":null,"preferences":null,"is_deleted":0,"hlc":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966","node_id":"42bab6fa-f6c6-4e5b-babf-1a2adb170966","modified":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"}],"friendships":[]}'));
   });
 
   test('update and get changeset', () async {
@@ -37,11 +38,11 @@ void crdtTests(Database db, CrdtExecutor executor) {
     final changeset = await (db.executor as CrdtQueryExecutor).getChangeset();
 
     expect(changeset, isNotNull);
-    expect(changeset.length, equals(1));
+    expect(changeset.length, equals(2));
     expect(
         json.encode(changeset),
         equals(
-            '{"users":[{"id":1,"name":"Dash","birth_date":1318284000,"profile_picture":null,"preferences":null,"is_deleted":0,"hlc":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966","node_id":"42bab6fa-f6c6-4e5b-babf-1a2adb170966","modified":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"},{"id":2,"name":"Duke","birth_date":822351600,"profile_picture":null,"preferences":null,"is_deleted":0,"hlc":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966","node_id":"42bab6fa-f6c6-4e5b-babf-1a2adb170966","modified":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"},{"id":3,"name":"Go Gopher","birth_date":1332885600,"profile_picture":null,"preferences":null,"is_deleted":0,"hlc":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966","node_id":"42bab6fa-f6c6-4e5b-babf-1a2adb170966","modified":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"},{"id":6,"name":"Florian, the fluffy Ferret from Florida familiar with Flutter","birth_date":1430258400,"profile_picture":null,"preferences":null,"is_deleted":0,"hlc":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966","node_id":"42bab6fa-f6c6-4e5b-babf-1a2adb170966","modified":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"}]}'));
+            '{"users":[{"id":1,"name":"Dash","birth_date":1318284000,"profile_picture":null,"preferences":null,"is_deleted":0,"hlc":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966","node_id":"42bab6fa-f6c6-4e5b-babf-1a2adb170966","modified":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"},{"id":2,"name":"Duke","birth_date":822351600,"profile_picture":null,"preferences":null,"is_deleted":0,"hlc":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966","node_id":"42bab6fa-f6c6-4e5b-babf-1a2adb170966","modified":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"},{"id":3,"name":"Go Gopher","birth_date":1332885600,"profile_picture":null,"preferences":null,"is_deleted":0,"hlc":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966","node_id":"42bab6fa-f6c6-4e5b-babf-1a2adb170966","modified":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"},{"id":6,"name":"Florian, the fluffy Ferret from Florida familiar with Flutter","birth_date":1430258400,"profile_picture":null,"preferences":null,"is_deleted":0,"hlc":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966","node_id":"42bab6fa-f6c6-4e5b-babf-1a2adb170966","modified":"2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"}],"friendships":[]}'));
   });
 
   test('handle JSON changeset', () async {
@@ -66,7 +67,7 @@ void crdtTests(Database db, CrdtExecutor executor) {
   });
 
   test('reject merge changeset', () async {
-    var data = {
+    CrdtChangeset data = {
       "users": [
         {
           "id": 3,
@@ -76,7 +77,7 @@ void crdtTests(Database db, CrdtExecutor executor) {
           "preferences": null,
           "is_deleted": 0,
           "hlc":
-              "2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966",
+              Hlc.parse("2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"),
           "node_id": "42bab6fa-f6c6-4e5b-babf-1a2adb170966",
           "modified":
               "2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"
@@ -90,7 +91,7 @@ void crdtTests(Database db, CrdtExecutor executor) {
           "preferences": null,
           "is_deleted": 0,
           "hlc":
-              "2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966",
+              Hlc.parse("2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"),
           "node_id": "42bab6fa-f6c6-4e5b-babf-1a2adb170966",
           "modified":
               "2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"
@@ -110,7 +111,7 @@ void crdtTests(Database db, CrdtExecutor executor) {
     // There are two modified records in the changeset.
     // First one should be accepted because the hlc, nodeid and modified timestamp indicate a change
     // the second one indicates a stale record and the change should not be silently ignored.
-    var changeset = {
+    CrdtChangeset changeset = {
       "users": [
         {
           "id": 3,
@@ -120,7 +121,7 @@ void crdtTests(Database db, CrdtExecutor executor) {
           "preferences": null,
           "is_deleted": 0,
           "hlc":
-              "2023-09-02T06:48:11.103Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170968",
+              Hlc.parse("2023-09-02T06:48:11.103Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170968"),
           "node_id":
               "2023-09-02T06:48:11.103Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170968",
           "modified":
@@ -135,7 +136,7 @@ void crdtTests(Database db, CrdtExecutor executor) {
           "preferences": null,
           "is_deleted": 0,
           "hlc":
-              "2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966",
+              Hlc.parse("2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"),
           "node_id": "42bab6fa-f6c6-4e5b-babf-1a2adb170966",
           "modified":
               "2023-08-07T13:11:41.771Z-0000-42bab6fa-f6c6-4e5b-babf-1a2adb170966"
